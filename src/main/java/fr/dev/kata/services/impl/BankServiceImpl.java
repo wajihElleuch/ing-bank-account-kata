@@ -15,8 +15,18 @@ public class BankServiceImpl implements BankService {
         Objects.requireNonNull(account);
         if (amount.compareTo(MIN_VALUE) < 0) {
             throw new IllegalArgumentException("amount can't be less than 0.01");
-        } else {
-            account.addAmount(amount);
         }
+        account.addAmount(amount);
+    }
+
+    @Override
+    public void withdraw(Account account, BigDecimal amount) {
+        Objects.requireNonNull(amount);
+        Objects.requireNonNull(account);
+
+        if(account.getAmount().subtract(amount).compareTo(BigDecimal.ZERO)<0){
+            throw new IllegalArgumentException("not enough balance");
+        }
+        account.withdrawAmount(amount);
     }
 }
