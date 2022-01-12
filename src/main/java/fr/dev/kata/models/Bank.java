@@ -12,5 +12,5 @@ public class Bank {
 
     private UUID id;
     private String name;
-    private List<Customer> customers;
+    private List<Account> accounts;
 }
