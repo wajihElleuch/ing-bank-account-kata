@@ -1,56 +1,92 @@
 package fr.dev.kata.services.impl;
 
+import fr.dev.kata.dto.TransactionDTO;
+import fr.dev.kata.exceptions.AccountNotFoundException;
 import fr.dev.kata.models.Account;
-import fr.dev.kata.models.Customer;
 import fr.dev.kata.models.Transaction;
+import fr.dev.kata.models.TransactionType;
+import fr.dev.kata.repositories.AccountRepository;
 import fr.dev.kata.services.AccountService;
+import fr.dev.kata.services.TransactionService;
+import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
+@Service
 public class AccountServiceImpl implements AccountService {
     private static final BigDecimal MIN_VALUE = new BigDecimal("0.01");
 
-    @Override
-    public void deposit(Customer customer, int numAccount, BigDecimal amount) {
-        Objects.requireNonNull(amount);
-        Objects.requireNonNull(customer);
-        Objects.requireNonNull(numAccount);
-        Account account = customer.getAccounts().
-                stream().
-                filter(account1 -> account1.getNumAccount() == numAccount).
-                findFirst().orElseThrow(() -> new IllegalArgumentException("account not exist"));
-        if (amount.compareTo(MIN_VALUE) < 0) {
-            throw new IllegalArgumentException("amount can't be less than 0.01");
+    private final AccountRepository accountRepository;
+    private final TransactionService transactionService;
+
+    public AccountServiceImpl(AccountRepository accountRepository, TransactionService transactionService) {
+        this.accountRepository = accountRepository;
+        this.transactionService = transactionService;
+    }
+
+   @Override
+   @Transactional
+    public Transaction deposit(TransactionDTO transactionDTO) throws AccountNotFoundException {
+        if (transactionDTO.getAmount().compareTo(MIN_VALUE) > 0) {
+            Optional<Account> account = this.accountRepository.findById(transactionDTO.getAccountId());
+            if (account.isPresent()) {
+                Account depositAccount = account.get();
+                BigDecimal newAmount = depositAccount.getAmount().add(transactionDTO.getAmount());
+                depositAccount.setAmount(newAmount);
+                this.accountRepository.save(depositAccount);
+                return this.transactionService.create(TransactionType.DEPOSIT, depositAccount, transactionDTO.getAmount());
+            }
+            throw new AccountNotFoundException(String.format("didn't find Account with id: %s", transactionDTO.getAccountId()));
         }
-        account.addAmount(amount);
-    }
+       throw new IllegalArgumentException("amount must be grater than " + MIN_VALUE);
+   }
 
     @Override
-    public synchronized void withdraw(Customer customer, int numAccount, BigDecimal amount) {
-        Objects.requireNonNull(amount);
-        Objects.requireNonNull(customer);
-        Objects.requireNonNull(numAccount);
-        Account account = customer.getAccounts().
-                stream().
-                filter(account1 -> account1.getNumAccount() == numAccount).
-                findFirst().orElseThrow(() -> new IllegalArgumentException("account not exist"));
-        if (account.getAmount().subtract(amount).compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("not enough balance");
+    @Transactional
+    public synchronized Transaction withdraw(TransactionDTO transactionDTO) {
+        if (transactionDTO.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+            Optional<Account> account = this.accountRepository.findById(transactionDTO.getAccountId());
+            if (account.isPresent() && canWithdraw(transactionDTO, account)) {
+                Account depositAccount = account.get();
+                BigDecimal newAmount = depositAccount.getAmount().subtract(transactionDTO.getAmount());
+                depositAccount.setAmount(newAmount);
+                this.accountRepository.save(depositAccount);
+                return this.transactionService.create(TransactionType.WITHDRAW, depositAccount, transactionDTO.getAmount());
+            }
         }
-        account.withdrawAmount(amount);
+        throw new IllegalArgumentException("amount must be grater than 0");
+    }
+
+    private boolean canWithdraw(TransactionDTO transactionDTO, Optional<Account> account) {
+        return account.filter(value -> value.getAmount().subtract(transactionDTO.getAmount())
+                .compareTo(BigDecimal.ZERO) >= 0).isPresent();
     }
 
     @Override
-    public BigDecimal getBalance(Account account) {
-        return account.getAmount();
+    public BigDecimal getBalance(String id) throws AccountNotFoundException {
+        Optional<Account> account = this.accountRepository.findById(id);
+        if (account.isPresent()) {
+            return account.get().getAmount();
+        }
+        throw new AccountNotFoundException(String.format("didn't find Account with id: %s", id));
     }
 
     @Override
-    public List<Transaction> getTransactions(Account account) {
-        return account.getTransactions();
+    public List<Transaction> getTransactions(String id) {
+        return this.transactionService.getAllByAccountId(id);
+    }
+
+    @Override
+    public Account create(Account account) {
+        return this.accountRepository.save(account);
+    }
+
+    @Override
+    public List<Account> findAll() {
+        return this.accountRepository.findAll();
     }
 
 

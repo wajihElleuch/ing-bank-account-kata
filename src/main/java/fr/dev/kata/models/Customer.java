@@ -1,26 +1,29 @@
 package fr.dev.kata.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.util.ArrayList;
+import javax.persistence.*;
 import java.util.List;
-import java.util.UUID;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
 public class Customer {
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    private String id;
 
-    private UUID id;
     private String name;
-    private List<Account> accounts;
 
-    public Customer(UUID id, String name) {
-        this.id = id;
-        this.name = name;
-        this.accounts=new ArrayList<>();
-    }
-    public void addAccount(Account account){
-        this.accounts.add(account);
-    }
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "customer")
+    private List<Account> accounts;
 
 }
