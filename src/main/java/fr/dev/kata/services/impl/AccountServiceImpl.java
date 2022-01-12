@@ -68,7 +68,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public BigDecimal getBalance(String id) throws AccountNotFoundException {
+    public BigDecimal getBalance(String id) {
         Optional<Account> account = this.accountRepository.findById(id);
         return account.map(Account::getAmount).orElseThrow(()->
                 new AccountNotFoundException(String.format("didn't find Account with id: %s", id)));

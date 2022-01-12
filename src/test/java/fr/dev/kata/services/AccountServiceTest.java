@@ -76,7 +76,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void shouldDepositAmountToAccountBalance() throws AccountNotFoundException {
+    void shouldDepositAmountToAccountBalance() {
         TransactionDTO transactionDTO = TransactionDTO.builder()
                                             .accountId(ACCOUNT_ID)
                                             .amount(BigDecimal.TEN)
@@ -127,7 +127,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void shouldWithdrawAmountFromAccountBalance() throws AccountNotFoundException {
+    void shouldWithdrawAmountFromAccountBalance() {
         TransactionDTO transactionDTO = TransactionDTO.builder()
                 .accountId(ACCOUNT_ID)
                 .amount(BigDecimal.TEN)
@@ -184,5 +184,22 @@ public class AccountServiceTest {
             accountService.withdraw(transactionDTO);
         }).isInstanceOf(AccountNotFoundException.class)
                 .hasMessageContaining("didn't find Account with id:");
+    }
+
+    @Test
+    void shouldReturnAccountBalance()  {
+
+        Account account = Account.builder()
+                .id(ACCOUNT_ID)
+                .numAccount(1234L)
+                .amount(BigDecimal.TEN)
+                .build();
+
+        when(accountRepository.findById(ACCOUNT_ID)).thenReturn(Optional.ofNullable(account));
+
+        BigDecimal result = accountService.getBalance(ACCOUNT_ID);
+
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(BigDecimal.TEN);
     }
 }
