@@ -76,7 +76,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void shouldDepositAddAccountBalance() throws AccountNotFoundException {
+    void shouldDepositAmountToAccountBalance() throws AccountNotFoundException {
         TransactionDTO transactionDTO = TransactionDTO.builder()
                                             .accountId(ACCOUNT_ID)
                                             .amount(BigDecimal.TEN)
@@ -126,4 +126,63 @@ public class AccountServiceTest {
                 .hasMessageContaining("amount must be grater than " + MIN_VALUE);
     }
 
+    @Test
+    void shouldWithdrawAmountFromAccountBalance() throws AccountNotFoundException {
+        TransactionDTO transactionDTO = TransactionDTO.builder()
+                .accountId(ACCOUNT_ID)
+                .amount(BigDecimal.TEN)
+                .build();
+
+        Account account = Account.builder()
+                .id(ACCOUNT_ID)
+                .numAccount(1234L)
+                .amount(BigDecimal.TEN)
+                .build();
+
+        Transaction transaction = Transaction.builder()
+                .account(account)
+                .amount(BigDecimal.TEN)
+                .type(TransactionType.WITHDRAW)
+                .build();
+
+        when(accountRepository.findById(ACCOUNT_ID)).thenReturn(Optional.ofNullable(account));
+        when(transactionService.create(TransactionType.WITHDRAW, account, transactionDTO.getAmount())).thenReturn(transaction);
+
+        Transaction result = accountService.withdraw(transactionDTO);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getAccount().getId()).isEqualTo(ACCOUNT_ID);
+        assertThat(result.getAmount()).isEqualTo(BigDecimal.TEN);
+        assertThat(result.getAccount().getAmount()).isEqualTo(BigDecimal.ZERO);
+        assertThat(result.getType()).isEqualTo(TransactionType.WITHDRAW);
+    }
+    @Test
+    void shouldThrowExceptionWhenWithdrawLessThanZero() {
+
+        TransactionDTO transactionDTO = TransactionDTO.builder()
+                .accountId(ACCOUNT_ID)
+                .amount(BigDecimal.ZERO)
+                .build();
+
+
+        assertThatThrownBy(() -> {
+            accountService.withdraw(transactionDTO);
+        }).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("amount must be grater than 0");
+    }
+    @Test
+    void shouldThrowExceptionWhenAccountNotFound() {
+
+        TransactionDTO transactionDTO = TransactionDTO.builder()
+                .accountId(ACCOUNT_ID)
+                .amount(BigDecimal.TEN)
+                .build();
+
+
+        when(accountRepository.findById(ACCOUNT_ID)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> {
+            accountService.withdraw(transactionDTO);
+        }).isInstanceOf(AccountNotFoundException.class)
+                .hasMessageContaining("didn't find Account with id:");
+    }
 }

@@ -49,13 +49,15 @@ public class AccountServiceImpl implements AccountService {
     public synchronized Transaction withdraw(TransactionDTO transactionDTO) {
         if (transactionDTO.getAmount().compareTo(BigDecimal.ZERO) > 0) {
             Optional<Account> account = this.accountRepository.findById(transactionDTO.getAccountId());
-            if (account.isPresent() && canWithdraw(transactionDTO, account)) {
-                Account depositAccount = account.get();
-                BigDecimal newAmount = depositAccount.getAmount().subtract(transactionDTO.getAmount());
-                depositAccount.setAmount(newAmount);
-                this.accountRepository.save(depositAccount);
-                return this.transactionService.create(TransactionType.WITHDRAW, depositAccount, transactionDTO.getAmount());
+            Account withDrawAccount=account.orElseThrow(()->
+                    new AccountNotFoundException(String.format("didn't find Account with id: %s", transactionDTO.getAccountId())));
+            if (canWithdraw(transactionDTO, account)) {
+                BigDecimal newAmount = withDrawAccount.getAmount().subtract(transactionDTO.getAmount());
+                withDrawAccount.setAmount(newAmount);
+                this.accountRepository.save(withDrawAccount);
+                return this.transactionService.create(TransactionType.WITHDRAW, withDrawAccount, transactionDTO.getAmount());
             }
+            throw new IllegalArgumentException("can't withdraw insufficient balance");
         }
         throw new IllegalArgumentException("amount must be grater than 0");
     }
@@ -68,10 +70,8 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public BigDecimal getBalance(String id) throws AccountNotFoundException {
         Optional<Account> account = this.accountRepository.findById(id);
-        if (account.isPresent()) {
-            return account.get().getAmount();
-        }
-        throw new AccountNotFoundException(String.format("didn't find Account with id: %s", id));
+        return account.map(Account::getAmount).orElseThrow(()->
+                new AccountNotFoundException(String.format("didn't find Account with id: %s", id)));
     }
 
     @Override

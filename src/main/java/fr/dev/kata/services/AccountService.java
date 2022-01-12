@@ -12,7 +12,7 @@ public interface AccountService {
     List<Account> findAll();
     Account create(Account account);
     Transaction deposit(TransactionDTO transactionDTO) throws AccountNotFoundException;
-    Transaction withdraw(TransactionDTO transactionDTO);
+    Transaction withdraw(TransactionDTO transactionDTO) throws AccountNotFoundException;
     BigDecimal getBalance(String id) throws AccountNotFoundException;
     List<Transaction> getTransactions(String id);
 }
