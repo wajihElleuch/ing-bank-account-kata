@@ -23,6 +23,7 @@ public class Account {
     )
     private String id;
 
+    // pour une solution plus robuste il faut implementer via eventSourcing
     private BigDecimal amount = BigDecimal.ZERO;
 
     private Long numAccount;

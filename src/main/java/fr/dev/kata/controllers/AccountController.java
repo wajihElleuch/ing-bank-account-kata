@@ -33,17 +33,17 @@ public class AccountController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @PostMapping("/deposit")
-    public ResponseEntity<Transaction> deposit(@RequestBody TransactionDTO transactionDTO) throws AccountNotFoundException {
-            Transaction transaction = this.accountService.deposit(transactionDTO);
-            return new ResponseEntity<>(transaction, HttpStatus.OK);
+    @PostMapping("/{id}/transaction")
+    public ResponseEntity<Transaction> deposit(@PathVariable String id, @RequestBody TransactionDTO transactionDTO) throws AccountNotFoundException {
+        switch (transactionDTO.getTransactionType()){
+            case DEPOSIT: return new ResponseEntity<>(this.accountService.deposit(id, transactionDTO), HttpStatus.OK);
+            case WITHDRAW: return new ResponseEntity<>(this.accountService.withdraw(id, transactionDTO), HttpStatus.OK);
+            default: return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
     }
 
-    @PostMapping("/withdraw")
-    public ResponseEntity<Transaction> withDraw(@RequestBody TransactionDTO transactionDTO){
-        Transaction transaction = this.accountService.withdraw(transactionDTO);
-        return new ResponseEntity<>(transaction, HttpStatus.OK);
-    }
+
     @GetMapping("/{id}/balance")
     public ResponseEntity<BigDecimal> getBalance(@PathVariable String id) throws AccountNotFoundException {
         BigDecimal balance= this.accountService.getBalance(id);

@@ -29,9 +29,9 @@ public class AccountServiceImpl implements AccountService {
 
    @Override
    @Transactional
-    public Transaction deposit(TransactionDTO transactionDTO) throws AccountNotFoundException {
+    public Transaction deposit(String accountId, TransactionDTO transactionDTO) throws AccountNotFoundException {
         if (transactionDTO.getAmount().compareTo(MIN_VALUE) > 0) {
-            Optional<Account> account = this.accountRepository.findById(transactionDTO.getAccountId());
+            Optional<Account> account = this.accountRepository.findById(accountId);
             if (account.isPresent()) {
                 Account depositAccount = account.get();
                 BigDecimal newAmount = depositAccount.getAmount().add(transactionDTO.getAmount());
@@ -39,18 +39,18 @@ public class AccountServiceImpl implements AccountService {
                 this.accountRepository.save(depositAccount);
                 return this.transactionService.create(TransactionType.DEPOSIT, depositAccount, transactionDTO.getAmount());
             }
-            throw new AccountNotFoundException(String.format("didn't find Account with id: %s", transactionDTO.getAccountId()));
+            throw new AccountNotFoundException(String.format("didn't find Account with id: %s", accountId));
         }
-       throw new IllegalArgumentException("amount must be grater than " + MIN_VALUE);
+       throw new IllegalArgumentException("amount must be greater than " + MIN_VALUE);
    }
 
     @Override
     @Transactional
-    public synchronized Transaction withdraw(TransactionDTO transactionDTO) {
+    public synchronized Transaction withdraw(String accountId, TransactionDTO transactionDTO) {
         if (transactionDTO.getAmount().compareTo(BigDecimal.ZERO) > 0) {
-            Optional<Account> account = this.accountRepository.findById(transactionDTO.getAccountId());
+            Optional<Account> account = this.accountRepository.findById(accountId);
             Account withDrawAccount=account.orElseThrow(()->
-                    new AccountNotFoundException(String.format("didn't find Account with id: %s", transactionDTO.getAccountId())));
+                    new AccountNotFoundException(String.format("didn't find Account with id: %s", accountId)));
             if (canWithdraw(transactionDTO, account)) {
                 BigDecimal newAmount = withDrawAccount.getAmount().subtract(transactionDTO.getAmount());
                 withDrawAccount.setAmount(newAmount);

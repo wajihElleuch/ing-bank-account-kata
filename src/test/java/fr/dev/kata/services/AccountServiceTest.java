@@ -78,7 +78,6 @@ public class AccountServiceTest {
     @Test
     void shouldDepositAmountToAccountBalance() {
         TransactionDTO transactionDTO = TransactionDTO.builder()
-                                            .accountId(ACCOUNT_ID)
                                             .amount(BigDecimal.TEN)
                                             .build();
 
@@ -97,7 +96,7 @@ public class AccountServiceTest {
         when(accountRepository.findById(ACCOUNT_ID)).thenReturn(Optional.ofNullable(account));
         when(transactionService.create(TransactionType.DEPOSIT, account, transactionDTO.getAmount())).thenReturn(transaction);
 
-        Transaction result = accountService.deposit(transactionDTO);
+        Transaction result = accountService.deposit(ACCOUNT_ID, transactionDTO);
 
         Mockito.verify(transactionService).create(captureTransactionType.capture(), captureAccount.capture(), any());
         Account resultAccount = captureAccount.getValue();
@@ -116,20 +115,18 @@ public class AccountServiceTest {
     void shouldThrowExceptionWhenDepositLessThanMinValue() {
 
         TransactionDTO transactionDTO = TransactionDTO.builder()
-                .accountId(ACCOUNT_ID)
                 .amount(BigDecimal.ZERO)
                 .build();
 
         assertThatThrownBy(() -> {
-            accountService.deposit(transactionDTO);
+        accountService.deposit(ACCOUNT_ID, transactionDTO);
         }).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("amount must be grater than " + MIN_VALUE);
+                .hasMessageContaining("amount must be greater than " + MIN_VALUE);
     }
 
     @Test
     void shouldWithdrawAmountFromAccountBalance() {
         TransactionDTO transactionDTO = TransactionDTO.builder()
-                .accountId(ACCOUNT_ID)
                 .amount(BigDecimal.TEN)
                 .build();
 
@@ -148,7 +145,7 @@ public class AccountServiceTest {
         when(accountRepository.findById(ACCOUNT_ID)).thenReturn(Optional.ofNullable(account));
         when(transactionService.create(TransactionType.WITHDRAW, account, transactionDTO.getAmount())).thenReturn(transaction);
 
-        Transaction result = accountService.withdraw(transactionDTO);
+        Transaction result = accountService.withdraw(ACCOUNT_ID, transactionDTO);
 
         assertThat(result).isNotNull();
         assertThat(result.getAccount().getId()).isEqualTo(ACCOUNT_ID);
@@ -160,13 +157,12 @@ public class AccountServiceTest {
     void shouldThrowExceptionWhenWithdrawLessThanZero() {
 
         TransactionDTO transactionDTO = TransactionDTO.builder()
-                .accountId(ACCOUNT_ID)
                 .amount(BigDecimal.ZERO)
                 .build();
 
 
         assertThatThrownBy(() -> {
-            accountService.withdraw(transactionDTO);
+            accountService.withdraw(ACCOUNT_ID, transactionDTO);
         }).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("amount must be grater than 0");
     }
@@ -174,14 +170,13 @@ public class AccountServiceTest {
     void shouldThrowExceptionWhenAccountNotFound() {
 
         TransactionDTO transactionDTO = TransactionDTO.builder()
-                .accountId(ACCOUNT_ID)
                 .amount(BigDecimal.TEN)
                 .build();
 
 
         when(accountRepository.findById(ACCOUNT_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> {
-            accountService.withdraw(transactionDTO);
+            accountService.withdraw(ACCOUNT_ID, transactionDTO);
         }).isInstanceOf(AccountNotFoundException.class)
                 .hasMessageContaining("didn't find Account with id:");
     }

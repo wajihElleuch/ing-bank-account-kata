@@ -11,8 +11,8 @@ import java.util.List;
 public interface AccountService {
     List<Account> findAll();
     Account create(Account account);
-    Transaction deposit(TransactionDTO transactionDTO) throws AccountNotFoundException;
-    Transaction withdraw(TransactionDTO transactionDTO) throws AccountNotFoundException;
+    Transaction deposit(String accountId, TransactionDTO transactionDTO) ;
+    Transaction withdraw(String accountId, TransactionDTO transactionDTO) ;
     BigDecimal getBalance(String id) throws AccountNotFoundException;
     List<Transaction> getTransactions(String id);
 }
